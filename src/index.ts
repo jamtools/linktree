@@ -115,8 +115,7 @@ const renderLinkTreePage = (links: Link[]) => {
 </head>
 <body>
 	<div class="container">
-		<h1>Linktree</h1>
-		<p class="tagline">All my links in one place.</p>
+		<h1>SongDrive</h1>
 		<div class="links">
 			${linkButtons}
 		</div>
