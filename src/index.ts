@@ -215,9 +215,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
 					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
 				</header>` : ''}
-				<nav class="linktree-directory" aria-label="Links">
+				<div class="linktree-directory" role="navigation" aria-label="Links">
 					${linkButtons}
-				</nav>
+				</div>
 			</div>
 		</section>
 	</main>
