@@ -111,10 +111,29 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			min-width: 0;
 		}
 		.terminal { border: 1px solid var(--border); background: var(--panel); }
+		.window-bar {
+			display: flex;
+			justify-content: flex-end;
+			padding: 0.75rem var(--space);
+			border-bottom: 1px solid var(--border);
+			background: var(--surface);
+			color: var(--accent);
+			font-size: 11px;
+			letter-spacing: 0.2em;
+		}
 		.terminal-body { padding: 2rem var(--space); }
 		.intro { margin-bottom: 2rem; overflow-wrap: anywhere; }
 		.prompt { color: var(--accent); margin-bottom: 1rem; font-size: 12px; }
 		.prompt-path { color: var(--muted); }
+		.cursor {
+			display: inline-block;
+			width: 0.6em;
+			height: 1em;
+			margin-left: 0.5em;
+			vertical-align: -0.15em;
+			background: var(--accent);
+			animation: blink 1.2s step-end infinite;
+		}
 		h1 {
 			font-size: clamp(1.5rem, 5vw, 2rem);
 			font-weight: 700;
@@ -130,13 +149,6 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			margin-top: 0.75rem;
 		}
 		.tagline::before { content: '// '; color: var(--accent); }
-		.directory-label {
-			color: var(--muted);
-			font-size: 11px;
-			letter-spacing: 0.1em;
-			text-transform: uppercase;
-			margin-bottom: 0.75rem;
-		}
 		.links {
 			display: flex;
 			flex-direction: column;
@@ -179,6 +191,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			white-space: nowrap;
 			border: 0;
 		}
+		@keyframes blink { 50% { opacity: 0; } }
 		@media (max-width: 600px) {
 			body { align-items: flex-start; padding-top: 2rem; }
 		}
@@ -195,14 +208,14 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 <body>
 	<main class="container">
 		<section class="terminal" aria-label="Link directory">
+			<div class="window-bar" aria-hidden="true"><span>− + ×</span></div>
 			<div class="terminal-body">
-				<div class="prompt" aria-hidden="true"><span class="prompt-path">~</span> $ ls --links</div>
+				<div class="prompt" aria-hidden="true"><span class="prompt-path">~</span> $ ls --links<span class="cursor"></span></div>
 				${settings.title || settings.subtitle ? `<header class="intro">
 					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
 					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
 				</header>` : ''}
-				<p class="directory-label" id="directory-label">// Select a destination</p>
-				<nav class="links" aria-labelledby="directory-label">
+				<nav class="links" aria-label="Links">
 					${linkButtons}
 				</nav>
 			</div>
