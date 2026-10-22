@@ -149,7 +149,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			margin-top: 0.75rem;
 		}
 		.tagline::before { content: '// '; color: var(--accent); }
-		.links {
+		.linktree-directory {
 			display: flex;
 			flex-direction: column;
 			gap: 0.625rem;
@@ -215,7 +215,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
 					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
 				</header>` : ''}
-				<nav class="links" aria-label="Links">
+				<nav class="linktree-directory" aria-label="Links">
 					${linkButtons}
 				</nav>
 			</div>
