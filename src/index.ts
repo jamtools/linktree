@@ -56,11 +56,14 @@ const htmlResponse = (html: string) =>
 
 const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
-		? links.map(link => `
+		? links.map((link, index) => `
 		<a href="${escapeHtml(link.url)}" class="link-btn" target="_blank" rel="noopener noreferrer">
-			${escapeHtml(link.title)}
+			<span class="link-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+			<span class="link-label">${escapeHtml(link.title)}</span>
+			<span class="link-arrow" aria-hidden="true">↗</span>
+			<span class="sr-only"> (opens in a new tab)</span>
 		</a>`).join('')
-		: '<p class="empty">No links yet.</p>';
+		: '<p class="empty"><span aria-hidden="true">[ -- ]</span> No links yet.</p>';
 
 	return `<!DOCTYPE html>
 <html lang="en">
@@ -68,79 +71,177 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>${escapeHtml(settings.title || 'Linktree')}</title>
+	<meta name="theme-color" content="#080f1c">
 	<style>
+		:root {
+			color-scheme: dark;
+			--bg: #080f1c;
+			--panel: #0c1627;
+			--surface: #101f35;
+			--text: #dce8fa;
+			--muted: #91a7c4;
+			--accent: #83b4ff;
+			--border: #2b4262;
+			--space: 1.5rem;
+		}
 		*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 		body {
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-			background: #0f0f11;
-			color: #fff;
+			font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+			background: var(--bg);
+			color: var(--text);
+			font-size: 14px;
+			line-height: 1.6;
 			min-height: 100vh;
+			min-height: 100svh;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			padding: 2rem 1rem;
+			padding: 3rem 1rem;
+		}
+		body::before {
+			content: '';
+			position: fixed;
+			inset: 0;
+			pointer-events: none;
+			background: repeating-linear-gradient(transparent 0 3px, rgba(131, 180, 255, 0.025) 3px 4px);
 		}
 		.container {
 			width: 100%;
-			max-width: 480px;
+			max-width: 560px;
+			min-width: 0;
+		}
+		.session, .window-bar, .window-footer {
 			display: flex;
-			flex-direction: column;
 			align-items: center;
+			justify-content: space-between;
 			gap: 1rem;
+			font-size: 11px;
+			letter-spacing: 0.08em;
+		}
+		.session { margin-bottom: 0.75rem; color: var(--muted); }
+		.session-status { color: var(--accent); }
+		.terminal { border: 1px solid var(--border); background: var(--panel); }
+		.window-bar {
+			padding: 0.75rem var(--space);
+			border-bottom: 1px solid var(--border);
+			color: var(--muted);
+			background: var(--surface);
+		}
+		.window-mark { color: var(--accent); letter-spacing: 0.2em; }
+		.terminal-body { padding: 2rem var(--space); }
+		.intro { margin-bottom: 2rem; overflow-wrap: anywhere; }
+		.prompt { color: var(--accent); margin-bottom: 1rem; font-size: 12px; }
+		.prompt-path { color: var(--muted); }
+		.cursor {
+			display: inline-block;
+			width: 0.6em;
+			height: 1em;
+			margin-left: 0.5em;
+			vertical-align: -0.15em;
+			background: var(--accent);
+			animation: blink 1.2s step-end infinite;
 		}
 		h1 {
-			font-size: 1.5rem;
+			font-size: clamp(1.5rem, 5vw, 2rem);
 			font-weight: 700;
-			letter-spacing: -0.02em;
+			line-height: 1.3;
+			letter-spacing: -0.04em;
+			text-transform: uppercase;
+			color: var(--accent);
+			text-shadow: 0 0 16px rgba(131, 180, 255, 0.15);
 		}
 		.tagline {
-			font-size: 0.95rem;
-			color: #888;
-			margin-bottom: 0.5rem;
+			font-size: 13px;
+			color: var(--muted);
+			margin-top: 0.75rem;
+		}
+		.tagline::before { content: '// '; color: var(--accent); }
+		.directory-label {
+			color: var(--muted);
+			font-size: 11px;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			margin-bottom: 0.75rem;
 		}
 		.links {
-			width: 100%;
 			display: flex;
 			flex-direction: column;
-			gap: 0.75rem;
-			margin-top: 0.5rem;
+			gap: 0.625rem;
 		}
 		.link-btn {
-			display: block;
+			display: grid;
+			grid-template-columns: 2ch minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 1rem;
 			width: 100%;
-			padding: 0.875rem 1.5rem;
-			background: #1e1e24;
-			border: 1px solid #2e2e38;
-			border-radius: 12px;
-			color: #fff;
+			min-height: 56px;
+			padding: 0.875rem 1rem;
+			background: var(--surface);
+			border: 1px solid var(--border);
+			color: var(--text);
 			text-decoration: none;
-			font-size: 1rem;
-			font-weight: 500;
-			text-align: center;
-			transition: background 0.15s, border-color 0.15s, transform 0.1s;
+			transition: background 0.15s, border-color 0.15s, color 0.15s;
 		}
-		.link-btn:hover {
-			background: #27272f;
-			border-color: #4a4a5a;
-			transform: translateY(-1px);
+		.link-index { color: var(--muted); font-size: 11px; }
+		.link-label { overflow-wrap: anywhere; }
+		.link-arrow { color: var(--accent); font-size: 18px; }
+		.link-btn:hover, .link-btn:focus-visible {
+			background: var(--accent);
+			border-color: var(--accent);
+			color: var(--bg);
 		}
-		.link-btn:active {
-			transform: translateY(0);
+		.link-btn:is(:hover, :focus-visible) :is(.link-index, .link-arrow) { color: inherit; }
+		.link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+		.link-btn:active { transform: translateY(1px); }
+		.window-footer {
+			padding: 0.75rem var(--space);
+			border-top: 1px dashed var(--border);
+			color: var(--muted);
+			font-size: 10px;
 		}
-		.empty {
-			color: #555;
-			font-size: 0.9rem;
+		.empty { padding: 1rem; border: 1px dashed var(--border); color: var(--muted); }
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+			border: 0;
+		}
+		@keyframes blink { 50% { opacity: 0; } }
+		@media (max-width: 400px) {
+			:root { --space: 1rem; }
+			body { padding: 1.5rem 0.75rem; }
+			.link-btn { gap: 0.75rem; }
+			.window-footer { letter-spacing: 0; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after { animation: none !important; transition: none !important; }
 		}
 	</style>
 </head>
 <body>
-	<div class="container">
-		${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
-		${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
-		<div class="links">
-			${linkButtons}
-		</div>
-	</div>
+	<main class="container">
+		<div class="session" aria-hidden="true"><span>~/links</span><span class="session-status">[ READY ]</span></div>
+		<section class="terminal" aria-label="Link directory">
+			<div class="window-bar" aria-hidden="true"><span>LINKS / DIRECTORY</span><span class="window-mark">− + ×</span></div>
+			<div class="terminal-body">
+				<div class="prompt" aria-hidden="true"><span class="prompt-path">~</span> $ ls --links<span class="cursor"></span></div>
+				${settings.title || settings.subtitle ? `<header class="intro">
+					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
+					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
+				</header>` : ''}
+				<p class="directory-label" id="directory-label">// Select a destination</p>
+				<nav class="links" aria-labelledby="directory-label">
+					${linkButtons}
+				</nav>
+			</div>
+			<footer class="window-footer"><span>${String(links.length).padStart(2, '0')} ${links.length === 1 ? 'LINK' : 'LINKS'} AVAILABLE</span><span>OPEN IN NEW TAB <span aria-hidden="true">↗</span></span></footer>
+		</section>
+	</main>
 </body>
 </html>`;
 };
