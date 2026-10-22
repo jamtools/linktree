@@ -8,6 +8,26 @@ type Link = {
 	url: string;
 };
 
+type PageSettings = {
+	title: string;
+	subtitle: string;
+};
+
+const getPageSettings = async (kv: KVNamespace): Promise<PageSettings> => {
+	const defaults = { title: 'Linktree', subtitle: 'All my links in one place.' };
+	const raw = await kv.get('page-settings');
+	if (!raw) return defaults;
+	try {
+		const settings = JSON.parse(raw) as Partial<PageSettings> | null;
+		return {
+			title: typeof settings?.title === 'string' ? settings.title : defaults.title,
+			subtitle: typeof settings?.subtitle === 'string' ? settings.subtitle : defaults.subtitle,
+		};
+	} catch {
+		return defaults;
+	}
+};
+
 const getLinks = async (kv: KVNamespace): Promise<Link[]> => {
 	const raw = await kv.get('links');
 	if (!raw) return [];
@@ -34,7 +54,7 @@ const escapeHtml = (str: string) => {
 const htmlResponse = (html: string) =>
 	new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 
-const renderLinkTreePage = (links: Link[]) => {
+const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
 		? links.map(link => `
 		<a href="${escapeHtml(link.url)}" class="link-btn" target="_blank" rel="noopener noreferrer">
@@ -47,7 +67,7 @@ const renderLinkTreePage = (links: Link[]) => {
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Linktree</title>
+	<title>${escapeHtml(settings.title || 'Linktree')}</title>
 	<style>
 		*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 		body {
@@ -115,8 +135,8 @@ const renderLinkTreePage = (links: Link[]) => {
 </head>
 <body>
 	<div class="container">
-		<h1>Linktree</h1>
-		<p class="tagline">All my links in one place.</p>
+		${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
+		${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
 		<div class="links">
 			${linkButtons}
 		</div>
@@ -125,7 +145,7 @@ const renderLinkTreePage = (links: Link[]) => {
 </html>`;
 };
 
-const renderAdminPage = (links: Link[], message?: string) => {
+const renderAdminPage = (links: Link[], settings: PageSettings, message?: string) => {
 	const linkRows = links.map((link, i) => `
 		<tr>
 			<td>${i + 1}</td>
@@ -248,6 +268,7 @@ const renderAdminPage = (links: Link[], message?: string) => {
 			border: 1px solid #2a2a34;
 			border-radius: 10px;
 			padding: 1.25rem;
+			margin-bottom: 2rem;
 		}
 		.form-row {
 			display: flex;
@@ -279,6 +300,26 @@ const renderAdminPage = (links: Link[], message?: string) => {
 	<div class="page">
 		<h1>Links</h1>
 		${message ? `<div class="message">${escapeHtml(message)}</div>` : ''}
+
+		<h2>Page Settings</h2>
+		<div class="add-form">
+			<form method="POST" action="/admin/links">
+				<input type="hidden" name="_action" value="settings">
+				<div class="form-row">
+					<div class="form-field">
+						<label for="page-title">Page title (leave blank to hide)</label>
+						<input class="input" id="page-title" name="pageTitle" value="${escapeHtml(settings.title)}">
+					</div>
+					<div class="form-field">
+						<label for="page-subtitle">Subtitle (leave blank to hide)</label>
+						<input class="input" id="page-subtitle" name="pageSubtitle" value="${escapeHtml(settings.subtitle)}">
+					</div>
+				</div>
+				<div class="form-actions">
+					<button class="btn btn-primary" type="submit">Save Settings</button>
+				</div>
+			</form>
+		</div>
 
 		<table>
 			<thead>
@@ -325,16 +366,30 @@ export default {
 
 		// Public link tree page at root
 		if (path === '/' || path === '/qr') {
-			const links = await getLinks(env.LINKS_KV);
-			return htmlResponse(renderLinkTreePage(links));
+			const [links, settings] = await Promise.all([
+				getLinks(env.LINKS_KV), getPageSettings(env.LINKS_KV),
+			]);
+			return htmlResponse(renderLinkTreePage(links, settings));
 		}
 
 		// Admin UI for managing links
 		if (path === '/admin/links') {
+			const settings = await getPageSettings(env.LINKS_KV);
 			if (request.method === 'POST') {
 				const formData = await request.formData();
 				const action = formData.get('_action');
 				const links = await getLinks(env.LINKS_KV);
+
+				if (action === 'settings') {
+					const title = formData.get('pageTitle');
+					const subtitle = formData.get('pageSubtitle');
+					const updated = {
+						title: typeof title === 'string' ? title.trim() : settings.title,
+						subtitle: typeof subtitle === 'string' ? subtitle.trim() : settings.subtitle,
+					};
+					await env.LINKS_KV.put('page-settings', JSON.stringify(updated));
+					return htmlResponse(renderAdminPage(links, updated, 'Page settings saved.'));
+				}
 
 				if (action === 'add') {
 					const title = (formData.get('title') as string | null)?.trim();
@@ -342,16 +397,16 @@ export default {
 					if (title && linkUrl) {
 						links.push({ id: crypto.randomUUID(), title, url: linkUrl });
 						await putLinks(env.LINKS_KV, links);
-						return htmlResponse(renderAdminPage(links, 'Link added.'));
+						return htmlResponse(renderAdminPage(links, settings, 'Link added.'));
 					}
-					return htmlResponse(renderAdminPage(links, 'Title and URL are required.'));
+					return htmlResponse(renderAdminPage(links, settings, 'Title and URL are required.'));
 				}
 
 				if (action === 'delete') {
 					const id = formData.get('id') as string | null;
 					const updated = links.filter(l => l.id !== id);
 					await putLinks(env.LINKS_KV, updated);
-					return htmlResponse(renderAdminPage(updated, 'Link deleted.'));
+					return htmlResponse(renderAdminPage(updated, settings, 'Link deleted.'));
 				}
 
 				if (action === 'edit') {
@@ -360,14 +415,14 @@ export default {
 					const linkUrl = (formData.get('url') as string | null)?.trim();
 					const updated = links.map(l => l.id === id && title && linkUrl ? { ...l, title, url: linkUrl } : l);
 					await putLinks(env.LINKS_KV, updated);
-					return htmlResponse(renderAdminPage(updated, 'Link saved.'));
+					return htmlResponse(renderAdminPage(updated, settings, 'Link saved.'));
 				}
 
-				return htmlResponse(renderAdminPage(links));
+				return htmlResponse(renderAdminPage(links, settings));
 			}
 
 			const links = await getLinks(env.LINKS_KV);
-			return htmlResponse(renderAdminPage(links));
+			return htmlResponse(renderAdminPage(links, settings));
 		}
 
 		return new Response('Not found', { status: 404 });
