@@ -179,6 +179,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			white-space: nowrap;
 			border: 0;
 		}
+		@media (max-width: 600px) {
+			body { align-items: flex-start; padding-top: 2rem; }
+		}
 		@media (max-width: 400px) {
 			:root { --space: 1rem; }
 			body { padding: 1.5rem 0.75rem; }
