@@ -110,37 +110,11 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			max-width: 560px;
 			min-width: 0;
 		}
-		.session, .window-bar, .window-footer {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: 1rem;
-			font-size: 11px;
-			letter-spacing: 0.08em;
-		}
-		.session { margin-bottom: 0.75rem; color: var(--muted); }
-		.session-status { color: var(--accent); }
 		.terminal { border: 1px solid var(--border); background: var(--panel); }
-		.window-bar {
-			padding: 0.75rem var(--space);
-			border-bottom: 1px solid var(--border);
-			color: var(--muted);
-			background: var(--surface);
-		}
-		.window-mark { color: var(--accent); letter-spacing: 0.2em; }
 		.terminal-body { padding: 2rem var(--space); }
 		.intro { margin-bottom: 2rem; overflow-wrap: anywhere; }
 		.prompt { color: var(--accent); margin-bottom: 1rem; font-size: 12px; }
 		.prompt-path { color: var(--muted); }
-		.cursor {
-			display: inline-block;
-			width: 0.6em;
-			height: 1em;
-			margin-left: 0.5em;
-			vertical-align: -0.15em;
-			background: var(--accent);
-			animation: blink 1.2s step-end infinite;
-		}
 		h1 {
 			font-size: clamp(1.5rem, 5vw, 2rem);
 			font-weight: 700;
@@ -193,12 +167,6 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		.link-btn:is(:hover, :focus-visible) :is(.link-index, .link-arrow) { color: inherit; }
 		.link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 		.link-btn:active { transform: translateY(1px); }
-		.window-footer {
-			padding: 0.75rem var(--space);
-			border-top: 1px dashed var(--border);
-			color: var(--muted);
-			font-size: 10px;
-		}
 		.empty { padding: 1rem; border: 1px dashed var(--border); color: var(--muted); }
 		.sr-only {
 			position: absolute;
@@ -211,12 +179,10 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			white-space: nowrap;
 			border: 0;
 		}
-		@keyframes blink { 50% { opacity: 0; } }
 		@media (max-width: 400px) {
 			:root { --space: 1rem; }
 			body { padding: 1.5rem 0.75rem; }
 			.link-btn { gap: 0.75rem; }
-			.window-footer { letter-spacing: 0; }
 		}
 		@media (prefers-reduced-motion: reduce) {
 			*, *::before, *::after { animation: none !important; transition: none !important; }
@@ -225,11 +191,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 </head>
 <body>
 	<main class="container">
-		<div class="session" aria-hidden="true"><span>~/links</span><span class="session-status">[ READY ]</span></div>
 		<section class="terminal" aria-label="Link directory">
-			<div class="window-bar" aria-hidden="true"><span>LINKS / DIRECTORY</span><span class="window-mark">− + ×</span></div>
 			<div class="terminal-body">
-				<div class="prompt" aria-hidden="true"><span class="prompt-path">~</span> $ ls --links<span class="cursor"></span></div>
+				<div class="prompt" aria-hidden="true"><span class="prompt-path">~</span> $ ls --links</div>
 				${settings.title || settings.subtitle ? `<header class="intro">
 					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
 					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
@@ -239,7 +203,6 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 					${linkButtons}
 				</nav>
 			</div>
-			<footer class="window-footer"><span>${String(links.length).padStart(2, '0')} ${links.length === 1 ? 'LINK' : 'LINKS'} AVAILABLE</span><span>OPEN IN NEW TAB <span aria-hidden="true">↗</span></span></footer>
 		</section>
 	</main>
 </body>
