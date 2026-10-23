@@ -1,0 +1,72 @@
+# Linktree
+
+A Cloudflare Worker serving a public link directory and a KV-backed editor at `/admin/links`.
+
+## Local development
+
+```sh
+npm ci
+npm run dev
+```
+
+Local Wrangler storage is separate from production. Links and page settings are not copied automatically.
+
+## Production automation
+
+`.github/workflows/deploy.yml` checks pull requests and deploys pushes to `main`.
+You can also run the workflow manually on `main` from GitHub Actions.
+
+Repository secrets:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Production defaults to **https://kochell.dev**. Override it with the GitHub Actions
+repository variable `PRODUCTION_HOSTNAME` if needed. The hostname's zone must
+already be active in the deployment Cloudflare account. Existing conflicting DNS
+records or an existing Worker custom domain must be resolved before the first deployment.
+
+Each deployment:
+
+1. Type-checks, tests provisioning logic, and dry-runs the Worker bundle.
+2. Looks up `linktree-production-links` in the account, creating it only if absent.
+3. Generates `.wrangler/deploy/wrangler.json` with the real namespace binding.
+4. Deploys `linktree-production` and provisions its custom domain through Wrangler.
+5. Checks that the public page returns the link directory.
+
+Deployments are serialized to avoid competing KV creation. The generated config
+is ignored by Git; resource IDs are discovered from Cloudflare on each run.
+Existing KV contents are preserved. No separate infrastructure state backend is needed.
+
+The token needs Account **Workers Scripts: Edit**, **Workers KV Storage: Edit**,
+and **Account Settings: Read**; Zone **Workers Routes: Edit**, **DNS: Edit**, and
+**Zone: Read**, scoped to the deployment account and zone.
+
+### Admin access (configured manually)
+
+Configure Cloudflare Access for **`kochell.dev/admin/links`**, allowing your chosen
+identities. The Worker itself does not authenticate admin requests. Until Access
+is configured, anyone who reaches that route can change links and page settings.
+Keep `/` public. The deployment disables `workers.dev` and version preview URLs
+so they cannot provide alternative routes around the custom domain's Access policy.
+Access applications and policies are managed manually and are not modified by CI.
+
+### Run locally
+
+With the same Cloudflare credentials exported:
+
+```sh
+npm run deploy:production
+```
+
+To validate without credentials or remote changes:
+
+```sh
+npm run check
+npm test
+npm run deploy:prepare -- --dry-run
+npx wrangler deploy --config .wrangler/deploy/wrangler.json --dry-run
+```
+
+The original default/staging Wrangler environments still contain placeholder IDs;
+automatic infrastructure provisioning targets production only.

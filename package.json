@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
+    "check": "tsc --noEmit",
+    "test": "node --test scripts/*.test.mjs",
+    "deploy:prepare": "node scripts/prepare-deploy.mjs",
     "deploy": "wrangler deploy",
     "deploy:staging": "wrangler deploy --env staging",
-    "deploy:production": "wrangler deploy --env production"
+    "deploy:production": "npm run deploy:prepare && wrangler deploy --config .wrangler/deploy/wrangler.json"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250320.0",
