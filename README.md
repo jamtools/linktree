@@ -10,16 +10,18 @@ keep their numbered markers. Domain mappings live in `src/site-icons.ts`.
 ## Local development
 
 ```sh
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 
 Local Wrangler storage is separate from production. Links and page settings are not copied automatically.
 
 ## Production automation
 
-`.github/workflows/deploy.yml` checks pull requests and deploys pushes to `main`.
-You can also run the workflow manually on `main` from GitHub Actions.
+`.github/workflows/deploy.yml` checks pull requests and deploys pushes to `main`
+or `vk/1cce-lt-basic-linktre`. Both branches target the same production Worker.
+Once registered on the default branch, the workflow can also be run manually
+on either deployment branch from GitHub Actions.
 
 Repository secrets:
 
@@ -61,17 +63,18 @@ Access applications and policies are managed manually and are not modified by CI
 With the same Cloudflare credentials exported:
 
 ```sh
-npm run deploy:production
+pnpm run deploy:production
 ```
 
 To validate without credentials or remote changes:
 
 ```sh
-npm run check
-npm test
-npm run deploy:prepare -- --dry-run
-npx wrangler deploy --config .wrangler/deploy/wrangler.json --dry-run
+pnpm run check
+pnpm test
+pnpm run deploy:prepare --dry-run
+pnpm exec wrangler deploy --config .wrangler/deploy/wrangler.json --dry-run
 ```
 
-The original default/staging Wrangler environments still contain placeholder IDs;
-automatic infrastructure provisioning targets production only.
+The staging Wrangler environment still contains a placeholder ID; automatic
+infrastructure provisioning targets production only. The default environment
+retains the separately configured KV binding from the original setup.

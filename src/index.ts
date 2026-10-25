@@ -16,7 +16,7 @@ type PageSettings = {
 };
 
 const getPageSettings = async (kv: KVNamespace): Promise<PageSettings> => {
-	const defaults = { title: 'Linktree', subtitle: 'All my links in one place.' };
+	const defaults = { title: 'SongDrive', subtitle: '' };
 	const raw = await kv.get('page-settings');
 	if (!raw) return defaults;
 	try {

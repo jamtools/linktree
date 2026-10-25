@@ -3,7 +3,7 @@ name: Check and deploy Worker
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, vk/1cce-lt-basic-linktre]
   workflow_dispatch:
 
 permissions:
@@ -15,21 +15,22 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npm run check
-      - run: npm test
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm test
       - name: Validate production bundle without Cloudflare credentials
         run: |
-          npm run deploy:prepare -- --dry-run
-          npx wrangler deploy --config .wrangler/deploy/wrangler.json --dry-run
+          pnpm run deploy:prepare --dry-run
+          pnpm exec wrangler deploy --config .wrangler/deploy/wrangler.json --dry-run
 
   deploy:
     needs: check
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/vk/1cce-lt-basic-linktre') && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
@@ -41,13 +42,14 @@ jobs:
       PRODUCTION_HOSTNAME: ${{ vars.PRODUCTION_HOSTNAME || 'kochell.dev' }}
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Provision KV and deploy Worker with custom domain
-        run: npm run deploy:production
+        run: pnpm run deploy:production
       - name: Smoke-test public page
         env:
           # The public page should remain outside your Access application.
