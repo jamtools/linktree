@@ -1,3 +1,5 @@
+import { renderSiteIcon } from './site-icons';
+
 export interface Env {
 	LINKS_KV: KVNamespace;
 }
@@ -58,7 +60,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
 		? links.map((link, index) => `
 		<a href="${escapeHtml(link.url)}" class="link-btn" target="_blank" rel="noopener noreferrer">
-			<span class="link-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+			<span class="link-index" aria-hidden="true">${renderSiteIcon(link.url) ?? String(index + 1).padStart(2, '0')}</span>
 			<span class="link-label">${escapeHtml(link.title)}</span>
 			<span class="link-arrow" aria-hidden="true">↗</span>
 			<span class="sr-only"> (opens in a new tab)</span>
@@ -183,7 +185,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		.linktree-directory[hidden] { display: none; }
 		.link-btn {
 			display: grid;
-			grid-template-columns: 2ch minmax(0, 1fr) auto;
+			grid-template-columns: 20px minmax(0, 1fr) auto;
 			align-items: center;
 			gap: 1rem;
 			width: 100%;
@@ -195,7 +197,8 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			text-decoration: none;
 			transition: background 0.15s, border-color 0.15s, color 0.15s;
 		}
-		.link-index { color: var(--muted); font-size: 11px; }
+		.link-index { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+		.site-icon { display: block; width: 20px; height: 20px; }
 		.link-label { overflow-wrap: anywhere; }
 		.link-arrow { color: var(--accent); font-size: 18px; }
 		.link-btn:hover, .link-btn:focus-visible {
