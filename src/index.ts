@@ -59,11 +59,10 @@ const htmlResponse = (html: string) =>
 const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
 		? links.map((link, index) => `
-		<a href="${escapeHtml(link.url)}" class="link-btn" target="_blank" rel="noopener noreferrer">
+		<a href="${escapeHtml(link.url)}" class="link-btn">
 			<span class="link-index" aria-hidden="true">${renderSiteIcon(link.url) ?? String(index + 1).padStart(2, '0')}</span>
 			<span class="link-label">${escapeHtml(link.title)}</span>
 			<span class="link-arrow" aria-hidden="true">↗</span>
-			<span class="sr-only"> (opens in a new tab)</span>
 		</a>`).join('')
 		: '<p class="empty"><span aria-hidden="true">[ -- ]</span> No links yet.</p>';
 
@@ -125,34 +124,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		}
 		.terminal-body { padding: 2rem var(--space); }
 		.intro { margin-bottom: 2rem; overflow-wrap: anywhere; }
-		.command-form { margin-bottom: 1.5rem; }
-		.prompt { display: flex; align-items: center; color: var(--accent); font-size: 12px; }
-		.prompt-path { color: var(--muted); }
-		.command-input {
-			flex: 1;
-			min-width: 0;
-			width: 100%;
-			margin-left: 0.75rem;
-			padding: 0.75rem 0;
-			border: 0;
-			background: transparent;
-			color: var(--text);
-			font: inherit;
-		}
-		.run-command {
-			margin-top: 0.75rem;
-			min-height: 44px;
-			padding: 0.625rem 1rem;
-			border: 1px solid var(--accent);
-			background: var(--surface);
-			color: var(--accent);
-			font: inherit;
-			cursor: pointer;
-		}
-		.run-command:hover { background: var(--accent); color: var(--bg); }
-		.run-command:disabled { border-color: var(--border); background: var(--surface); color: var(--muted); cursor: default; }
-		.command-input:focus-visible, .run-command:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-		.command-form[data-executed] .cursor { display: none; }
+		.open-terminal { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border); font-size: 12px; }
+		.open-command { color: var(--accent); white-space: pre-wrap; overflow-wrap: anywhere; }
+		.command-output { margin-top: 0.5rem; color: var(--muted); overflow-wrap: anywhere; }
 		.cursor {
 			display: inline-block;
 			width: 0.6em;
@@ -176,13 +150,11 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			color: var(--muted);
 			margin-top: 0.75rem;
 		}
-		.tagline::before { content: '// '; color: var(--accent); }
 		.linktree-directory {
 			display: flex;
 			flex-direction: column;
 			gap: 0.625rem;
 		}
-		.linktree-directory[hidden] { display: none; }
 		.link-btn {
 			display: grid;
 			grid-template-columns: 20px minmax(0, 1fr) auto;
@@ -244,33 +216,64 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
 					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
 				</header>` : ''}
-				<form class="command-form" id="command-form">
-					<div class="prompt">
-						<span aria-hidden="true"><span class="prompt-path">~</span> $</span>
-						<label class="sr-only" for="link-command">Command to show links</label>
-						<input class="command-input" id="link-command" value="ls --links" readonly spellcheck="false">
-						<span class="cursor" aria-hidden="true"></span>
-					</div>
-					<button class="run-command" type="submit" aria-controls="link-output" aria-expanded="false">Run Command</button>
-					<p class="sr-only" id="command-status" role="status"></p>
-				</form>
-				<noscript><p class="empty">Enable JavaScript to run the command and show the links.</p></noscript>
-				<div class="linktree-directory" id="link-output" role="navigation" aria-label="Links" hidden>
+				<div class="linktree-directory" role="navigation" aria-label="Links">
 					${linkButtons}
+				</div>
+				<div class="open-terminal" id="open-terminal" hidden>
+					<div class="open-command" aria-hidden="true"><span id="open-command"></span><span class="cursor"></span></div>
+					<p class="command-output" id="command-output" role="status"></p>
 				</div>
 			</div>
 		</section>
 	</main>
 	<script>
-		const commandForm = document.getElementById('command-form');
-		commandForm.addEventListener('submit', (event) => {
+		const directory = document.querySelector('.linktree-directory');
+		const terminal = document.getElementById('open-terminal');
+		const commandLine = document.getElementById('open-command');
+		const output = document.getElementById('command-output');
+		const pause = (duration) => new Promise(resolve => setTimeout(resolve, duration));
+		let opening = false;
+		let generation = 0;
+		window.addEventListener('pageshow', () => {
+			generation++;
+			opening = false;
+			directory.removeAttribute('aria-busy');
+			terminal.hidden = true;
+			commandLine.textContent = '';
+			output.textContent = '';
+		});
+		directory.addEventListener('click', async (event) => {
+			const link = event.target.closest('a.link-btn');
+			if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+			const destination = new URL(link.href);
+			if (!['https:', 'http:'].includes(destination.protocol)) return;
 			event.preventDefault();
-			document.getElementById('link-output').hidden = false;
-			commandForm.dataset.executed = 'true';
-			const button = commandForm.querySelector('button');
-			button.setAttribute('aria-expanded', 'true');
-			button.disabled = true;
-			document.getElementById('command-status').textContent = 'Command complete. ${links.length > 0 ? `${links.length} ${links.length === 1 ? 'link' : 'links'} available below.` : 'No links yet.'}';
+			if (opening) return;
+			opening = true;
+			const current = ++generation;
+			const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+			const command = 'open ' + link.href;
+			directory.setAttribute('aria-busy', 'true');
+			commandLine.textContent = '';
+			output.textContent = '';
+			terminal.hidden = false;
+			terminal.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+			if (reducedMotion) {
+				commandLine.textContent = command;
+			} else {
+				// Keep even long URLs under about 1.2 seconds of typing.
+				const characters = Array.from(command);
+				const batchSize = Math.max(1, Math.ceil(characters.length / 60));
+				for (let index = 0; index < characters.length; index += batchSize) {
+					if (current !== generation) return;
+					commandLine.textContent += characters.slice(index, index + batchSize).join('');
+					await pause(20);
+				}
+			}
+			if (current !== generation) return;
+			output.textContent = '[OK] Opening ' + destination.hostname + '…';
+			await pause(reducedMotion ? 100 : 400);
+			if (current === generation) window.location.assign(link.href);
 		});
 	</script>
 </body>
