@@ -123,8 +123,34 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		}
 		.terminal-body { padding: 2rem var(--space); }
 		.intro { margin-bottom: 2rem; overflow-wrap: anywhere; }
-		.prompt { color: var(--accent); margin-bottom: 1rem; font-size: 12px; }
+		.command-form { margin-bottom: 1.5rem; }
+		.prompt { display: flex; align-items: center; color: var(--accent); font-size: 12px; }
 		.prompt-path { color: var(--muted); }
+		.command-input {
+			flex: 1;
+			min-width: 0;
+			width: 100%;
+			margin-left: 0.75rem;
+			padding: 0.75rem 0;
+			border: 0;
+			background: transparent;
+			color: var(--text);
+			font: inherit;
+		}
+		.run-command {
+			margin-top: 0.75rem;
+			min-height: 44px;
+			padding: 0.625rem 1rem;
+			border: 1px solid var(--accent);
+			background: var(--surface);
+			color: var(--accent);
+			font: inherit;
+			cursor: pointer;
+		}
+		.run-command:hover { background: var(--accent); color: var(--bg); }
+		.run-command:disabled { border-color: var(--border); background: var(--surface); color: var(--muted); cursor: default; }
+		.command-input:focus-visible, .run-command:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+		.command-form[data-executed] .cursor { display: none; }
 		.cursor {
 			display: inline-block;
 			width: 0.6em;
@@ -154,6 +180,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			flex-direction: column;
 			gap: 0.625rem;
 		}
+		.linktree-directory[hidden] { display: none; }
 		.link-btn {
 			display: grid;
 			grid-template-columns: 2ch minmax(0, 1fr) auto;
@@ -210,17 +237,39 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		<section class="terminal" aria-label="Link directory">
 			<div class="window-bar" aria-hidden="true"><span>− + ×</span></div>
 			<div class="terminal-body">
-				<div class="prompt" aria-hidden="true"><span class="prompt-path">~</span> $ ls --links<span class="cursor"></span></div>
 				${settings.title || settings.subtitle ? `<header class="intro">
 					${settings.title ? `<h1>${escapeHtml(settings.title)}</h1>` : ''}
 					${settings.subtitle ? `<p class="tagline">${escapeHtml(settings.subtitle)}</p>` : ''}
 				</header>` : ''}
-				<div class="linktree-directory" role="navigation" aria-label="Links">
+				<form class="command-form" id="command-form">
+					<div class="prompt">
+						<span aria-hidden="true"><span class="prompt-path">~</span> $</span>
+						<label class="sr-only" for="link-command">Command to show links</label>
+						<input class="command-input" id="link-command" value="ls --links" readonly spellcheck="false">
+						<span class="cursor" aria-hidden="true"></span>
+					</div>
+					<button class="run-command" type="submit" aria-controls="link-output" aria-expanded="false">Run Command</button>
+					<p class="sr-only" id="command-status" role="status"></p>
+				</form>
+				<noscript><p class="empty">Enable JavaScript to run the command and show the links.</p></noscript>
+				<div class="linktree-directory" id="link-output" role="navigation" aria-label="Links" hidden>
 					${linkButtons}
 				</div>
 			</div>
 		</section>
 	</main>
+	<script>
+		const commandForm = document.getElementById('command-form');
+		commandForm.addEventListener('submit', (event) => {
+			event.preventDefault();
+			document.getElementById('link-output').hidden = false;
+			commandForm.dataset.executed = 'true';
+			const button = commandForm.querySelector('button');
+			button.setAttribute('aria-expanded', 'true');
+			button.disabled = true;
+			document.getElementById('command-status').textContent = 'Command complete. ${links.length > 0 ? `${links.length} ${links.length === 1 ? 'link' : 'links'} available below.` : 'No links yet.'}';
+		});
+	</script>
 </body>
 </html>`;
 };
