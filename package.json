@@ -2,6 +2,7 @@
   "name": "linktree",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.11.0",
   "scripts": {
     "dev": "wrangler dev",
     "check": "tsc --noEmit",
