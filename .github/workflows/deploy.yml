@@ -1,0 +1,77 @@
+name: Check and deploy Worker
+
+on:
+  pull_request:
+  push:
+    branches: [main, vk/1cce-lt-basic-linktre]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm test
+      - name: Validate production bundle without Cloudflare credentials
+        run: |
+          pnpm run deploy:prepare --dry-run
+          pnpm exec wrangler deploy --config .wrangler/deploy/wrangler.json --dry-run
+
+  deploy:
+    needs: check
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/vk/1cce-lt-basic-linktre') && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: cloudflare-production
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PRODUCTION_HOSTNAME: ${{ vars.PRODUCTION_HOSTNAME || 'kochell.dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Provision KV and deploy Worker with custom domain
+        run: pnpm run deploy:production
+      - name: Smoke-test public page
+        env:
+          # The public page should remain outside your Access application.
+          HOSTNAME: ${{ env.PRODUCTION_HOSTNAME }}
+        run: |
+          node --input-type=module <<'JS'
+          const url = `https://${process.env.HOSTNAME}/`;
+          for (let attempt = 0; attempt < 12; attempt++) {
+            try {
+              const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(15000) });
+              const html = await response.text();
+              if (response.status === 200 && html.includes('linktree-directory')) {
+                console.log(`Public page OK: ${url}`);
+                process.exit(0);
+              }
+              console.log(`Waiting for public page: HTTP ${response.status}`);
+            } catch (error) {
+              console.log(`Waiting for domain: ${error.message}`);
+            }
+            await new Promise(resolve => setTimeout(resolve, 10000));
+          }
+          throw new Error(`Public page did not become available at ${url}`);
+          JS
+      - name: Record deployment URL
+        run: echo "Deployed to https://${PRODUCTION_HOSTNAME}" >> "$GITHUB_STEP_SUMMARY"

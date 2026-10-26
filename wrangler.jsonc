@@ -1,0 +1,34 @@
+{
+	"name": "linktree",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-03-20",
+	"observability": {
+		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "LINKS_KV",
+			"id": "a725cadec24b446087a562e2f304dd70"
+		}
+	],
+	"env": {
+		"staging": {
+			"name": "linktree-staging",
+			"kv_namespaces": [
+				{
+					"binding": "LINKS_KV",
+					"id": "REPLACE_WITH_STAGING_KV_NAMESPACE_ID"
+				}
+			]
+		},
+		"production": {
+			"name": "linktree-production",
+			"kv_namespaces": [
+				{
+					"binding": "LINKS_KV",
+					"id": "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"
+				}
+			]
+		}
+	}
+}
