@@ -249,16 +249,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			const destination = new URL(link.href);
 			if (!['https:', 'http:'].includes(destination.protocol)) return;
 			const hostname = destination.hostname.endsWith('.') ? destination.hostname.slice(0, -1) : destination.hostname;
-			if (hostname === 'linkedin.com' || hostname.endsWith('.linkedin.com') || hostname === 'lnkd.in') {
-				// Preserve the real tap for LinkedIn's native app handoff.
-				generation++;
-				directory.removeAttribute('aria-busy');
-				commandLine.textContent = '';
-				output.textContent = '';
-				terminal.scrollTop = 0;
-				return;
-			}
-			event.preventDefault();
+			const immediateNavigation = hostname === 'linkedin.com' || hostname.endsWith('.linkedin.com') || hostname === 'lnkd.in';
+			// Animate every link, preserving the real LinkedIn tap for app handoff.
+			if (!immediateNavigation) event.preventDefault();
 			// Each click replaces the previous animation and pending destination.
 			const current = ++generation;
 			const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -283,6 +276,10 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			if (current !== generation) return;
 			output.textContent = '[OK] Opening ' + destination.hostname + '…';
 			terminal.scrollTop = terminal.scrollHeight;
+			if (immediateNavigation) {
+				directory.removeAttribute('aria-busy');
+				return;
+			}
 			await pause(reducedMotion ? 100 : 400);
 			if (current !== generation) return;
 			window.location.assign(link.href);
