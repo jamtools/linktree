@@ -124,7 +124,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		}
 		.terminal-body { padding: 1.25rem var(--space); }
 		.intro { margin-bottom: 1.25rem; overflow-wrap: anywhere; }
-		.open-terminal { margin-top: 0.875rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); font-size: 12px; }
+		.open-terminal { height: 6rem; overflow-y: auto; margin-top: 0.875rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); font-size: 12px; }
 		.open-command { color: var(--accent); white-space: pre-wrap; overflow-wrap: anywhere; }
 		.command-output { margin-top: 0.5rem; color: var(--muted); overflow-wrap: anywhere; }
 		.cursor {
@@ -222,7 +222,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 				<div class="linktree-directory" role="navigation" aria-label="Links">
 					${linkButtons}
 				</div>
-				<div class="open-terminal" id="open-terminal" hidden>
+				<div class="open-terminal" id="open-terminal">
 					<div class="open-command" aria-hidden="true"><span id="open-command"></span><span class="cursor"></span></div>
 					<p class="command-output" id="command-output" role="status"></p>
 				</div>
@@ -239,7 +239,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		window.addEventListener('pageshow', () => {
 			generation++;
 			directory.removeAttribute('aria-busy');
-			terminal.hidden = true;
+			terminal.scrollTop = 0;
 			commandLine.textContent = '';
 			output.textContent = '';
 		});
@@ -256,8 +256,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			directory.setAttribute('aria-busy', 'true');
 			commandLine.textContent = '';
 			output.textContent = '';
-			terminal.hidden = false;
-			terminal.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+			terminal.scrollTop = 0;
 			if (reducedMotion) {
 				commandLine.textContent = command;
 			} else {
@@ -267,11 +266,13 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 				for (let index = 0; index < characters.length; index += batchSize) {
 					if (current !== generation) return;
 					commandLine.textContent += characters.slice(index, index + batchSize).join('');
+					terminal.scrollTop = terminal.scrollHeight;
 					await pause(20);
 				}
 			}
 			if (current !== generation) return;
 			output.textContent = '[OK] Opening ' + destination.hostname + '…';
+			terminal.scrollTop = terminal.scrollHeight;
 			await pause(reducedMotion ? 100 : 400);
 			if (current === generation) window.location.assign(link.href);
 		});
