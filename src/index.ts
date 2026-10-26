@@ -59,11 +59,10 @@ const htmlResponse = (html: string) =>
 const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
 		? links.map((link, index) => `
-		<a href="${escapeHtml(link.url)}" class="link-btn" target="_blank" rel="noopener noreferrer">
+		<a href="${escapeHtml(link.url)}" class="link-btn">
 			<span class="link-index" aria-hidden="true">${renderSiteIcon(link.url) ?? String(index + 1).padStart(2, '0')}</span>
 			<span class="link-label">${escapeHtml(link.title)}</span>
 			<span class="link-arrow" aria-hidden="true">↗</span>
-			<span class="sr-only"> (opens in a new tab)</span>
 		</a>`).join('')
 		: '<p class="empty"><span aria-hidden="true">[ -- ]</span> No links yet.</p>';
 
@@ -249,6 +248,16 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 			const destination = new URL(link.href);
 			if (!['https:', 'http:'].includes(destination.protocol)) return;
+			const hostname = destination.hostname.endsWith('.') ? destination.hostname.slice(0, -1) : destination.hostname;
+			if (hostname === 'linkedin.com' || hostname.endsWith('.linkedin.com') || hostname === 'lnkd.in') {
+				// Preserve the real tap for LinkedIn's native app handoff.
+				generation++;
+				directory.removeAttribute('aria-busy');
+				commandLine.textContent = '';
+				output.textContent = '';
+				terminal.scrollTop = 0;
+				return;
+			}
 			event.preventDefault();
 			// Each click replaces the previous animation and pending destination.
 			const current = ++generation;
@@ -276,15 +285,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			terminal.scrollTop = terminal.scrollHeight;
 			await pause(reducedMotion ? 100 : 400);
 			if (current !== generation) return;
-			const destinationLink = document.createElement('a');
-			destinationLink.href = link.href;
-			destinationLink.target = '_blank';
-			destinationLink.rel = 'noopener noreferrer';
-			destinationLink.hidden = true;
-			document.body.append(destinationLink);
-			destinationLink.click();
-			destinationLink.remove();
-			directory.removeAttribute('aria-busy');
+			window.location.assign(link.href);
 		});
 	</script>
 </body>
