@@ -4,6 +4,7 @@ import {
 	faSpotify, faStackOverflow, faTelegram, faThreads, faTiktok, faTwitch,
 	faXTwitter, faYoutube,
 } from '@fortawesome/free-brands-svg-icons';
+import { faGlobe } from '@fortawesome/free-solid-svg-icons';
 
 // Match destinations, not user-provided labels. Subdomains share their site's icon.
 const siteIcons: Record<string, typeof faGithub> = {
@@ -36,17 +37,20 @@ const siteIcons: Record<string, typeof faGithub> = {
 	'youtu.be': faYoutube,
 };
 
-export function renderSiteIcon(url: string): string | undefined {
+const renderIcon = (icon: typeof faGithub): string => {
+	const [width, height, , , paths] = icon.icon;
+	return `<svg class="site-icon" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">${(Array.isArray(paths) ? paths : [paths]).map(path => `<path fill="currentColor" d="${path}"></path>`).join('')}</svg>`;
+};
+
+export function renderSiteIcon(url: string): string {
 	let destination: URL;
 	try {
 		destination = new URL(url);
 	} catch {
-		return;
+		return renderIcon(faGlobe);
 	}
-	if (destination.protocol !== 'https:' && destination.protocol !== 'http:') return;
+	if (destination.protocol !== 'https:' && destination.protocol !== 'http:') return renderIcon(faGlobe);
 	const hostname = destination.hostname.toLowerCase().replace(/\.$/, '');
 	const domain = Object.keys(siteIcons).find(domain => hostname === domain || hostname.endsWith(`.${domain}`));
-	if (!domain) return;
-	const [width, height, , , paths] = siteIcons[domain].icon;
-	return `<svg class="site-icon" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">${(Array.isArray(paths) ? paths : [paths]).map(path => `<path fill="currentColor" d="${path}"></path>`).join('')}</svg>`;
+	return renderIcon(domain ? siteIcons[domain] : faGlobe);
 }

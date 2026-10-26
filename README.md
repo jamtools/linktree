@@ -2,10 +2,11 @@
 
 A Cloudflare Worker serving a public link directory and a KV-backed editor at `/admin/links`.
 
-Known website links use [Font Awesome Free brand icons](https://fontawesome.com/)
+Website links use [Font Awesome Free icons](https://fontawesome.com/)
 (icons licensed under CC BY 4.0), bundled as inline SVGs. Icons inherit the
-terminal colors and don't require third-party network requests. Other destinations
-keep their numbered markers. Domain mappings live in `src/site-icons.ts`.
+terminal colors and don't require third-party network requests. Known destinations
+use brand icons; custom websites and other destinations use a matching globe icon.
+Domain mappings live in `src/site-icons.ts`.
 
 ## Local development
 

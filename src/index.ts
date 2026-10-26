@@ -58,9 +58,9 @@ const htmlResponse = (html: string) =>
 
 const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
-		? links.map((link, index) => `
+		? links.map((link) => `
 		<a href="${escapeHtml(link.url)}" class="link-btn">
-			<span class="link-index" aria-hidden="true">${renderSiteIcon(link.url) ?? String(index + 1).padStart(2, '0')}</span>
+			<span class="link-marker" aria-hidden="true">${renderSiteIcon(link.url)}</span>
 			<span class="link-label">${escapeHtml(link.title)}</span>
 			<span class="link-arrow" aria-hidden="true">↗</span>
 		</a>`).join('')
@@ -169,7 +169,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			text-decoration: none;
 			transition: background 0.15s, border-color 0.15s, color 0.15s;
 		}
-		.link-index { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+		.link-marker { display: flex; align-items: center; justify-content: center; color: var(--muted); }
 		.site-icon { display: block; width: 20px; height: 20px; }
 		.link-label { overflow-wrap: anywhere; }
 		.link-arrow { color: var(--accent); font-size: 18px; }
@@ -178,7 +178,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			border-color: var(--accent);
 			color: var(--bg);
 		}
-		.link-btn:is(:hover, :focus-visible) :is(.link-index, .link-arrow) { color: inherit; }
+		.link-btn:is(:hover, :focus-visible) :is(.link-marker, .link-arrow) { color: inherit; }
 		.link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 		.link-btn:active { transform: translateY(1px); }
 		.empty { padding: 1rem; border: 1px dashed var(--border); color: var(--muted); }

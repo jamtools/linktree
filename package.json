@@ -18,6 +18,7 @@
     "wrangler": "^4.0.0"
   },
   "dependencies": {
-    "@fortawesome/free-brands-svg-icons": "^7.3.1"
+    "@fortawesome/free-brands-svg-icons": "^7.3.1",
+    "@fortawesome/free-solid-svg-icons": "^7.3.1"
   }
 }
