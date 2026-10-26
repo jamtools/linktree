@@ -59,10 +59,11 @@ const htmlResponse = (html: string) =>
 const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 	const linkButtons = links.length > 0
 		? links.map((link, index) => `
-		<a href="${escapeHtml(link.url)}" class="link-btn">
+		<a href="${escapeHtml(link.url)}" class="link-btn" target="_blank" rel="noopener noreferrer">
 			<span class="link-index" aria-hidden="true">${renderSiteIcon(link.url) ?? String(index + 1).padStart(2, '0')}</span>
 			<span class="link-label">${escapeHtml(link.title)}</span>
 			<span class="link-arrow" aria-hidden="true">↗</span>
+			<span class="sr-only"> (opens in a new tab)</span>
 		</a>`).join('')
 		: '<p class="empty"><span aria-hidden="true">[ -- ]</span> No links yet.</p>';
 
@@ -249,7 +250,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			const destination = new URL(link.href);
 			if (!['https:', 'http:'].includes(destination.protocol)) return;
 			event.preventDefault();
-			// Each click invalidates any previous typing or pending navigation.
+			// Each click replaces the previous animation and pending destination.
 			const current = ++generation;
 			const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 			const command = 'open ' + link.href;
@@ -274,7 +275,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			output.textContent = '[OK] Opening ' + destination.hostname + '…';
 			terminal.scrollTop = terminal.scrollHeight;
 			await pause(reducedMotion ? 100 : 400);
-			if (current === generation) window.location.assign(link.href);
+			if (current !== generation) return;
+			window.open(link.href, '_blank', 'noopener,noreferrer');
+			directory.removeAttribute('aria-busy');
 		});
 	</script>
 </body>
