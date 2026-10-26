@@ -276,7 +276,14 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			terminal.scrollTop = terminal.scrollHeight;
 			await pause(reducedMotion ? 100 : 400);
 			if (current !== generation) return;
-			window.open(link.href, '_blank', 'noopener,noreferrer');
+			const destinationLink = document.createElement('a');
+			destinationLink.href = link.href;
+			destinationLink.target = '_blank';
+			destinationLink.rel = 'noopener noreferrer';
+			destinationLink.hidden = true;
+			document.body.append(destinationLink);
+			destinationLink.click();
+			destinationLink.remove();
 			directory.removeAttribute('aria-busy');
 		});
 	</script>
