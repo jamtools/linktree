@@ -83,7 +83,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			--muted: #91a7c4;
 			--accent: #83b4ff;
 			--border: #2b4262;
-			--space: 1.5rem;
+			--space: 1.25rem;
 		}
 		*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 		body {
@@ -97,7 +97,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			padding: 3rem 1rem;
+			padding: 1.5rem 1rem;
 		}
 		body::before {
 			content: '';
@@ -115,16 +115,16 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		.window-bar {
 			display: flex;
 			justify-content: flex-end;
-			padding: 0.75rem var(--space);
+			padding: 0.375rem var(--space);
 			border-bottom: 1px solid var(--border);
 			background: var(--surface);
 			color: var(--accent);
 			font-size: 11px;
 			letter-spacing: 0.2em;
 		}
-		.terminal-body { padding: 2rem var(--space); }
-		.intro { margin-bottom: 2rem; overflow-wrap: anywhere; }
-		.open-terminal { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border); font-size: 12px; }
+		.terminal-body { padding: 1.25rem var(--space); }
+		.intro { margin-bottom: 1.25rem; overflow-wrap: anywhere; }
+		.open-terminal { margin-top: 0.875rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); font-size: 12px; }
 		.open-command { color: var(--accent); white-space: pre-wrap; overflow-wrap: anywhere; }
 		.command-output { margin-top: 0.5rem; color: var(--muted); overflow-wrap: anywhere; }
 		.cursor {
@@ -148,12 +148,12 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		.tagline {
 			font-size: 13px;
 			color: var(--muted);
-			margin-top: 0.75rem;
+			margin-top: 0.375rem;
 		}
 		.linktree-directory {
 			display: flex;
 			flex-direction: column;
-			gap: 0.625rem;
+			gap: 0.375rem;
 		}
 		.link-btn {
 			display: grid;
@@ -161,8 +161,8 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			align-items: center;
 			gap: 1rem;
 			width: 100%;
-			min-height: 56px;
-			padding: 0.875rem 1rem;
+			min-height: 48px;
+			padding: 0.625rem 0.75rem;
 			background: var(--surface);
 			border: 1px solid var(--border);
 			color: var(--text);
@@ -195,11 +195,14 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		}
 		@keyframes blink { 50% { opacity: 0; } }
 		@media (max-width: 600px) {
-			body { align-items: flex-start; padding-top: 2rem; }
+			body { align-items: flex-start; padding: 0.75rem; }
+			.terminal-body { padding: 1rem var(--space); }
+			.intro { margin-bottom: 0.875rem; }
+			.link-btn { min-height: 44px; padding-block: 0.5rem; }
 		}
 		@media (max-width: 400px) {
-			:root { --space: 1rem; }
-			body { padding: 1.5rem 0.75rem; }
+			:root { --space: 0.75rem; }
+			h1 { font-size: 1.25rem; }
 			.link-btn { gap: 0.75rem; }
 		}
 		@media (prefers-reduced-motion: reduce) {
@@ -232,11 +235,9 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 		const commandLine = document.getElementById('open-command');
 		const output = document.getElementById('command-output');
 		const pause = (duration) => new Promise(resolve => setTimeout(resolve, duration));
-		let opening = false;
 		let generation = 0;
 		window.addEventListener('pageshow', () => {
 			generation++;
-			opening = false;
 			directory.removeAttribute('aria-busy');
 			terminal.hidden = true;
 			commandLine.textContent = '';
@@ -248,8 +249,7 @@ const renderLinkTreePage = (links: Link[], settings: PageSettings) => {
 			const destination = new URL(link.href);
 			if (!['https:', 'http:'].includes(destination.protocol)) return;
 			event.preventDefault();
-			if (opening) return;
-			opening = true;
+			// Each click invalidates any previous typing or pending navigation.
 			const current = ++generation;
 			const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 			const command = 'open ' + link.href;
